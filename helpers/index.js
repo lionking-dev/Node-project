@@ -1,12 +1,15 @@
 const Models = require("../models");
 const fs = require("fs");
+const sizeOf = require('image-size');
 const { storage } = require("../lib");
+const { model } = require("mongoose");
 
 const find = async (modelDb, queryObj) =>
   await Models[modelDb].find(queryObj).exec();
 
 const findOne = async (modelDb, queryObj) =>
   await Models[modelDb].findOne(queryObj).exec();
+
 const findOneAndSelect = async (modelDb, queryObj, selectQuery) =>
   await Models[modelDb].findOne(queryObj).select(selectQuery).exec();
 
@@ -14,6 +17,10 @@ const insertNewDocument = async (modelDb, storeObj) => {
   let data = new Models[modelDb](storeObj);
   return await data.save();
 };
+
+const validateEmail = async(modelDb, email) => 
+  await Models[modelDb].find({email: email}).lean();
+
 
 const updateDocument = async (modelDb, updateQuery, setQuery) =>
   await Models[modelDb].findOneAndUpdate(
@@ -147,6 +154,35 @@ const getDataSelectWithLimit = async (
     .limit(limit)
     .exec();
 
+const checkUserPhotoBySizeAndFormat = async (filePath) => {
+  try {
+    // Read the file size
+    const stats = fs.statSync(filePath);
+    const fileSizeInBytes = stats.size;
+    const fileSizeInMB = fileSizeInBytes / (1024 * 1024); // Convert to MB
+
+    // Check file format using the image-size library
+    const dimensions = sizeOf(filePath);
+    const format = dimensions.type; // 'jpg' or 'png'
+
+    // Check conditions (up to 10 MB, JPG or PNG)
+    if (fileSizeInMB <= 10 && (format === 'jpg' || format === 'png')) {
+      console.log(`File passed: ${filePath}`);
+      console.log(`File size: ${fileSizeInMB} MB`);
+      console.log(`File format: ${format}`);
+      return true;
+    } else {
+      console.log(`File failed: ${filePath}`);
+      console.log(`File size: ${fileSizeInMB} MB`);
+      console.log(`File format: ${format}`);
+      return false;
+    }
+  } catch (error) {
+    console.error(`Error reading file: ${filePath}`);
+    console.error(error);
+  }
+}
+
 module.exports = {
   find,
   findOne,
@@ -167,4 +203,6 @@ module.exports = {
   findSliceAndPopulate,
   findOneAndSelect,
   findPopulateSortAndLimit,
+  validateEmail,
+  checkUserPhotoBySizeAndFormat
 };

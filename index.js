@@ -22,7 +22,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(morgan("short"));
 
 // * Api routes
-app.use("/api", routes);
+app.use("/", routes);
 
 app.get("/", (req, res) => {
   console.log("hello");
